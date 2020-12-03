@@ -11,8 +11,7 @@ func main() {
 	log.Service("main start")
 	configDB := database.New(log)
 	server := server.New(configDB)
-	err := server.Start()
-	if err != nil {
+	if err := server.Start(); err != nil {
 		log.Fatalf("abandon server : %v", err)
 	}
 }

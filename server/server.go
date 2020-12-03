@@ -38,17 +38,15 @@ func (s *Server) Start() error {
 		return err
 	}
 
-	err = db.Init()
-	if err != nil {
+	if err = db.Init(); err != nil {
 		s.log.Errorf("not configure DB: %v", err)
 	}
 
-	err = http.ListenAndServe(s.BindAddr, s.router)
-	if err != nil {
+	if err = http.ListenAndServe(s.BindAddr, s.router); err != nil {
 		s.log.Errorf("Server is abandon : %v", err)
 		return err
 	}
-	s.log.Service("Listen And Serve")
+	s.log.Service("Server Listen...")
 
 	return nil
 }
