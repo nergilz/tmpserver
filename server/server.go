@@ -32,10 +32,15 @@ func (s *Server) Start() error {
 	s.log.Service("Server Start")
 	s.configureRoute()
 
-	err := database.Connect(s.dbconf)
+	db, err := database.Connect(s.dbconf)
 	if err != nil {
 		s.log.Errorf("error connect DB : %v", err)
 		return err
+	}
+
+	err = db.Init()
+	if err != nil {
+		s.log.Errorf("not configure DB: %v", err)
 	}
 
 	err = http.ListenAndServe(s.BindAddr, s.router)
@@ -60,6 +65,6 @@ func (s *Server) hendlerHello() http.HandlerFunc {
 	}
 }
 
-// func (s *Server) configureDB {
-
+// func (s *Server) configureDB() error {
+// 	return nil
 // }
