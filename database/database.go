@@ -35,11 +35,12 @@ func Connect(c *Config) (*DB, error) {
 		c.log.Errorf("error open DB : %v", err)
 		return nil, err
 	}
+	c.log.Service("open DB")
 	if err = conn.Ping(); err != nil {
 		c.log.Errorf("error ping DB : %v", err)
 		return nil, err
 	}
-	c.log.Service("open DB & ping DB")
+	c.log.Service("ping DB")
 	return &DB{
 		Config: c,
 		cdb:    conn,
@@ -61,13 +62,13 @@ func (db *DB) Init() error {
 	}
 	db.log.Service("DB init: create table: users")
 
+	// create superUser
 	q = `INSERT INTO users (email, password, role) VALUES ($1, $2, $3)`
 	_, err = db.cdb.Exec(q, "admin@mail.com", "qwerty", "super_admin")
 	if err != nil {
-		db.log.Warningf("not insert test user on tabel : %v", err)
+		db.log.Warningf("not insert superUser on tabel : %v", err)
 		return nil
 	}
-	db.log.Service("DB init: create test user")
 
 	return nil
 }

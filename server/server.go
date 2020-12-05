@@ -1,7 +1,6 @@
 package server
 
 import (
-	"io"
 	"net/http"
 
 	"github.com/0LuigiCode0/Library/logger"
@@ -15,6 +14,7 @@ type Server struct {
 	dbconf   *database.Config
 	log      *logger.Logger
 	router   *mux.Router
+	db       *database.DB
 }
 
 // New server
@@ -37,30 +37,12 @@ func (s *Server) Start() error {
 		s.log.Errorf("error connect DB : %v", err)
 		return err
 	}
-
 	if err = db.Init(); err != nil {
 		s.log.Errorf("not configure DB: %v", err)
 	}
+	s.db = db
 
-	if err = http.ListenAndServe(s.BindAddr, s.router); err != nil {
-		s.log.Errorf("Server is abandon : %v", err)
-		return err
-	}
-	s.log.Service("Server Listen...")
-
-	return nil
-}
-
-func (s *Server) configureRoute() {
-	s.router.HandleFunc("/hello", s.hendlerHello())
-	s.log.Service("configure route")
-}
-
-func (s *Server) hendlerHello() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "server is run on index")
-		s.log.Info("hendler Hello is run")
-	}
+	return http.ListenAndServe(s.BindAddr, s.router)
 }
 
 // func (s *Server) configureDB() error {
