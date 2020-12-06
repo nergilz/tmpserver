@@ -18,11 +18,11 @@ type Server struct {
 }
 
 // New server
-func New(config *database.Config) *Server {
+func New(config *database.Config, log *logger.Logger) *Server {
 	return &Server{
 		BindAddr: ":8080",
 		dbconf:   config,
-		log:      logger.InitLogger(""),
+		log:      log,
 		router:   mux.NewRouter(),
 	}
 }

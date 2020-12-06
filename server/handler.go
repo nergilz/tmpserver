@@ -9,7 +9,8 @@ import (
 
 func (s *Server) configureRoute() {
 	s.router.HandleFunc("/hello", s.hendlerHello())
-	s.router.HandleFunc("/user/create", s.CreateUser).Methods(http.MethodGet)
+	s.router.HandleFunc("/user/create", s.handlerCreateUser)
+	// s.router.HandleFunc("/user/find", s.handlerFimdByEmail)
 	s.log.Service("configure route")
 }
 
@@ -20,10 +21,9 @@ func (s *Server) hendlerHello() http.HandlerFunc {
 	}
 }
 
-// CreateUser ..
-func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	us := model.InitUserStore(s.db)
-	user := &model.UModel{
+	user := &model.UserModel{
 		Email:    "testemail1@mail.ru",
 		Password: "testpass1",
 		Role:     "user",
@@ -33,8 +33,13 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.log.Errorf("user not create : %v", err)
 		w.Write([]byte("user not create"))
+	} else {
+		s.log.Service("create user")
 	}
-	s.log.Service("create user")
 	w.WriteHeader(http.StatusOK)
 	s.log.Info("test user create")
 }
+
+// func (s *Server) handlerFimdByEmail(w http.ResponseWriter, r *http.Request) {
+
+// }

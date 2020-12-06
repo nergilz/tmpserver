@@ -10,7 +10,7 @@ func main() {
 	log := logger.InitLogger("")
 	log.Service("start main")
 	configDB := database.New(log)
-	server := server.New(configDB)
+	server := server.New(configDB, log)
 	if err := server.Start(); err != nil {
 		log.Fatalf("abandon server : %v", err)
 	}
