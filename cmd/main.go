@@ -8,11 +8,11 @@ import (
 
 func main() {
 	log := logger.InitLogger("")
-	log.Service("start main")
-	configDB := database.New(log)
-	server := server.New(configDB, log)
+	DBconfig := database.New(log)
+	server := server.New(DBconfig, log)
 	if err := server.Start(); err != nil {
-		log.Fatalf("abandon server : %v", err)
+		log.Fatalf("Server Fatal : %v", err)
+	} else {
+		log.Service("start server")
 	}
-	log.Service("start server")
 }

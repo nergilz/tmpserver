@@ -1,17 +1,20 @@
 package server
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 
-	"github.com/nergilz/tmpserver/model"
+	"github.com/nergilz/tmpserver/store"
 )
 
 func (s *Server) configureRoute() {
 	s.router.HandleFunc("/hello", s.hendlerHello())
 	s.router.HandleFunc("/user/create", s.handlerCreateUser)
-	// s.router.HandleFunc("/user/find", s.handlerFimdByEmail)
-	s.log.Service("configure route")
+	// s.router.HandleFunc("/user/find", s.handlerFindByEmail)
+	s.log.Service("configure Route")
 }
 
 func (s *Server) hendlerHello() http.HandlerFunc {
@@ -22,24 +25,36 @@ func (s *Server) hendlerHello() http.HandlerFunc {
 }
 
 func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
-	us := model.InitUserStore(s.db)
-	user := &model.UserModel{
-		Email:    "testemail1@mail.ru",
-		Password: "testpass1",
-		Role:     "user",
-	}
+	us := store.InitUserStore(s.db)
 	s.log.Service("init user store")
-	err := us.Create(user)
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		s.log.Warningf("Bad request body for create User: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("Bad body request , %v", http.StatusText(http.StatusBadRequest))))
+		return
+	}
+	var userFromBody store.UserModel
+
+	err = json.Unmarshal(body, &userFromBody)
+	if err != nil {
+		s.log.Warningf("Not unmarshal json from r.Body : %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("Not unmarshal json %v", http.StatusText(http.StatusBadRequest))))
+		return
+	}
+	// TODO: validation data
+
+	err = us.Create(&userFromBody)
 	if err != nil {
 		s.log.Errorf("user not create : %v", err)
-		w.Write([]byte("user not create"))
-	} else {
-		s.log.Service("create user")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("user not create %v", http.StatusText(http.StatusBadRequest))))
+		return
 	}
+
+	s.log.Info("create User")
 	w.WriteHeader(http.StatusOK)
-	s.log.Info("test user create")
+	w.Write([]byte(fmt.Sprintf("create User %v***", http.StatusText(http.StatusOK))))
 }
-
-// func (s *Server) handlerFimdByEmail(w http.ResponseWriter, r *http.Request) {
-
-// }

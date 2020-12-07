@@ -18,10 +18,10 @@ type Server struct {
 }
 
 // New server
-func New(config *database.Config, log *logger.Logger) *Server {
+func New(dbconfig *database.Config, log *logger.Logger) *Server {
 	return &Server{
 		BindAddr: ":8080",
-		dbconf:   config,
+		dbconf:   dbconfig,
 		log:      log,
 		router:   mux.NewRouter(),
 	}
@@ -37,14 +37,13 @@ func (s *Server) Start() error {
 		s.log.Errorf("error connect DB : %v", err)
 		return err
 	}
+	s.log.Service("connect DB")
+
 	if err = db.Init(); err != nil {
-		s.log.Errorf("not configure DB: %v", err)
+		return err
 	}
+	s.log.Service("Init DB")
 	s.db = db
 
 	return http.ListenAndServe(s.BindAddr, s.router)
 }
-
-// func (s *Server) configureDB() error {
-// 	return nil
-// }
