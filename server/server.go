@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 
+	"github.com/nergilz/tmpserver/store"
+
 	"github.com/0LuigiCode0/Library/logger"
 	"github.com/gorilla/mux"
 	"github.com/nergilz/tmpserver/database"
@@ -15,6 +17,7 @@ type Server struct {
 	log      *logger.Logger
 	router   *mux.Router
 	db       *database.DB
+	us       *store.UserStore
 }
 
 // New server
@@ -44,6 +47,7 @@ func (s *Server) Start() error {
 	}
 	s.log.Service("Init DB")
 	s.db = db
+	s.us = store.InitUserStore(db)
 
 	return http.ListenAndServe(s.BindAddr, s.router)
 }

@@ -3,6 +3,7 @@ package store
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 
 	"github.com/nergilz/tmpserver/database"
 )
@@ -20,10 +21,6 @@ type UserModel struct {
 	Role     string `json:"role"`
 }
 
-// RequestUserModel ...
-type RequestUserModel struct {
-}
-
 // InitUserStore ..
 func InitUserStore(db *database.DB) *UserStore {
 	us := new(UserStore)
@@ -31,7 +28,7 @@ func InitUserStore(db *database.DB) *UserStore {
 	return us
 }
 
-// Create user ...
+// Create user
 func (us *UserStore) Create(u *UserModel) error {
 	var id int
 	q := `INSERT INTO users (login, password, role) VALUES ($1,$2,$3) RETURNING id`
@@ -42,12 +39,21 @@ func (us *UserStore) Create(u *UserModel) error {
 	return nil
 }
 
-// FindByLogin ...
-func (us *UserStore) FindByLogin(login string) (*UserModel, error) {
+// Delete user
+func (us *UserStore) Delete(userID int) error {
+	q := `DELETE FROM users WHERE id = $1`
+	if err := us.db.Conn().QueryRow(q, userID).Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// FindByID ...
+func (us *UserStore) FindByID(userID string) (*UserModel, error) {
 	u := &UserModel{}
 	if err := us.db.Conn().QueryRow(
 		"SELECT id, login, password FROM users WHERE login = $1",
-		login).Scan( // заполняет модель UserModel
+		userID).Scan( // заполняет модель UserModel
 		&u.ID,
 		&u.Login,
 		&u.Password,
@@ -57,16 +63,8 @@ func (us *UserStore) FindByLogin(login string) (*UserModel, error) {
 	return u, nil
 }
 
-// CheckByLogin ..
-func (us *UserStore) CheckByLogin(login string) bool {
-	err := us.db.Conn().QueryRow("SELECT id, login, password FROM users WHERE login = $1", login)
-	if err != nil {
-		return false
-	}
-	return true
-}
-
-func hashPassword(s string) (string, error) {
+// HashPassword ...
+func HashPassword(s string) (string, error) {
 	data := []byte(s)
 	hash := sha256.New()
 	_, err := hash.Write(data)
@@ -75,4 +73,18 @@ func hashPassword(s string) (string, error) {
 	}
 	s = hex.EncodeToString(hash.Sum(nil))
 	return s, nil
+}
+
+// Validate ...
+func (u *UserModel) Validate() error {
+	if u.Login == "" {
+		return errors.New("Login cannnot de empty")
+	}
+	if u.Password == "" {
+		return errors.New("Password cannnot de empty")
+	}
+	if u.Role == "" || u.Role != "user" {
+		return errors.New("Role must be user")
+	}
+	return nil
 }
