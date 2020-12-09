@@ -10,14 +10,15 @@ import (
 
 // UserStore ..
 type UserStore struct {
-	db *database.DB
+	db        *database.DB
+	jwtSecret []byte
 }
 
 // UserModel ...
 type UserModel struct {
-	ID       int
+	ID       int    `json:"id"`
 	Login    string `json:"login"`
-	Password string
+	Password string `json:"password"`
 	Role     string `json:"role"`
 }
 
@@ -48,12 +49,12 @@ func (us *UserStore) Delete(userID int) error {
 	return nil
 }
 
-// FindByID ...
-func (us *UserStore) FindByID(userID string) (*UserModel, error) {
+// FindByLogin ...
+func (us *UserStore) FindByLogin(login string) (*UserModel, error) {
 	u := &UserModel{}
 	if err := us.db.Conn().QueryRow(
 		"SELECT id, login, password FROM users WHERE login = $1",
-		userID).Scan( // заполняет модель UserModel
+		login).Scan( // заполняет модель UserModel
 		&u.ID,
 		&u.Login,
 		&u.Password,
@@ -87,4 +88,10 @@ func (u *UserModel) Validate() error {
 		return errors.New("Role must be user")
 	}
 	return nil
+}
+
+// GetSecret ...
+func (us *UserStore) GetSecret() []byte {
+	us.jwtSecret = []byte("captainjacksparrowsayshi")
+	return us.jwtSecret
 }

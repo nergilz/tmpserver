@@ -11,19 +11,22 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/nergilz/tmpserver/store"
+	"github.com/nergilz/tmpserver/utils"
 )
 
 func (s *Server) configureRoute() {
 	s.router.HandleFunc("/hello", s.hendlerHello())
+	// s.router.HandleFunc("/login", s.)
 	s.router.HandleFunc("/user/create", s.handlerCreateUser)
 	s.router.HandleFunc("/user/delete", s.handlerDeleteUser).Queries("id", "{id:[0-9]+}")
+	// s.router.Use(s.auth)
 	s.log.Service("configure Route")
 }
 
 func (s *Server) hendlerHello() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "server is run on index")
-		s.log.Info("hendler Hello is run")
+		io.WriteString(w, "server is run on index, check JWT")
+		s.log.Info("hendler Hello is run, check JWT	")
 	}
 }
 
@@ -68,9 +71,24 @@ func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.log.Info("create User")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("create User %v***", http.StatusText(http.StatusOK))))
+	JWTtoken, err := utils.CreateJWTtoken(&userFromBody, s.us.GetSecret())
+	if err != nil {
+		s.log.Errorf("JWTtoken not create : %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("JWTtoken not create %v", http.StatusText(http.StatusBadRequest))))
+		return
+	}
+	JWTresp, err := json.Marshal(JWTtoken)
+	if err != nil {
+		s.log.Errorf("JWTtoken not marshal josn : %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("JWTtoken not marshal josn %v", http.StatusText(http.StatusBadRequest))))
+		return
+	}
+
+	s.log.Info("create User, create JWT token")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(JWTresp)
 }
 
 func (s *Server) handlerDeleteUser(w http.ResponseWriter, r *http.Request) {
