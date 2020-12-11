@@ -15,12 +15,16 @@ import (
 )
 
 func (s *Server) configureRoute() {
-	s.router.HandleFunc("/hello", s.hendlerHello())
 	// s.router.HandleFunc("/login", s.)
 	s.router.HandleFunc("/user/create", s.handlerCreateUser)
 	s.router.HandleFunc("/user/delete", s.handlerDeleteUser).Queries("id", "{id:[0-9]+}")
-	// s.router.Use(s.auth)
 	s.log.Service("configure Route")
+}
+
+func (s *Server) configureHello() {
+	s.router.HandleFunc("/hello", s.hendlerHello())
+	s.router.Use(s.authMiddleware)
+	s.log.Service("configure hello router")
 }
 
 func (s *Server) hendlerHello() http.HandlerFunc {
