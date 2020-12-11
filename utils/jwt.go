@@ -10,10 +10,10 @@ import (
 )
 
 // Claims : castom, not use!
-type Claims struct {
-	jwt.StandardClaims
-	Role string `json:"role"`
-}
+// type Claims struct {
+// 	jwt.StandardClaims
+// 	Role string `json:"role"`
+// }
 
 // CreateJWTtoken ...
 func CreateJWTtoken(u *store.UserModel, secret []byte) (string, error) {
@@ -50,7 +50,7 @@ func VerifyJWTtoken(accessToken string, signinKey []byte) (jwt.MapClaims, error)
 // CheckJWTtoken extract token metadata
 func CheckJWTtoken(claims jwt.MapClaims) (*store.UserModel, error) {
 	newErr := errors.New("Bad extract token metadata")
-	userID, err := strconv.ParseUint(fmt.Sprintf("%.f", claims["id"]), 10, 64)
+	userID, err := strconv.ParseInt(fmt.Sprintf("%.f", claims["id"]), 10, 64)
 	if err != nil {
 		return nil, err
 	}

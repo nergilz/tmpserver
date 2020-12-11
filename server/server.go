@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/nergilz/tmpserver/store"
@@ -50,4 +51,26 @@ func (s *Server) Start() error {
 	s.us = store.InitUserStore(db)
 
 	return http.ListenAndServe(s.BindAddr, s.router)
+}
+
+func (s *Server) configureRoute() {
+	s.router.HandleFunc("/hello", s.hendlerHello())
+
+	userRouter := s.router.PathPrefix("/user").Subrouter()
+	userRouter.HandleFunc("/login", s.handlerLoginUser)
+	userRouter.HandleFunc("/create", s.handlerCreateUser)
+	userRouter.HandleFunc("/delete", s.handlerDeleteUser).Queries("id", "{id:[0-9]+}")
+
+	s.router.Use(s.authMiddleware)
+	s.log.Service("configure Route with authMiddleware")
+}
+
+// GetUserFromContext get UserModel from Context
+func GetUserFromContext(r *http.Request, CtxKeyUser CtxKey) (*store.UserModel, error) {
+	valueCtx := r.Context().Value(CtxKeyUser)
+	if valueCtx == nil {
+		return nil, errors.New("Context is empty")
+	}
+	userCtx := valueCtx.(*store.UserModel)
+	return userCtx, nil
 }

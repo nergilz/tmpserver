@@ -16,3 +16,13 @@ func main() {
 		log.Service("start server")
 	}
 }
+
+//
+/*
+TODO
+add user in postgresql
+
+questions
+как найти user in /delete если нет id,
+всегда ли мы создаем claims со всеми полями
+*/
