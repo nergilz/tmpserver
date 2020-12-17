@@ -20,7 +20,7 @@ func main() {
 //
 /*
 TODO
-add user in postgresql
+add login user in postgresql
 
 questions
 как найти user in /delete если нет id,
