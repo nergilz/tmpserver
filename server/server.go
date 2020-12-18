@@ -19,6 +19,7 @@ type Server struct {
 	router   *mux.Router
 	db       *database.DB
 	us       *store.UserStore
+	ms       *store.MsgStore
 }
 
 // New server
@@ -46,9 +47,10 @@ func (s *Server) Start() error {
 	if err = db.Init(); err != nil {
 		return err
 	}
-	s.log.Service("Init DB")
 	s.db = db
 	s.us = store.InitUserStore(db)
+	s.ms = store.InitMsgStore(db)
+	s.log.Service("Init DB, userStrore, msgStore")
 
 	return http.ListenAndServe(s.BindAddr, s.router)
 }
@@ -60,6 +62,9 @@ func (s *Server) configureRoute() {
 	userRouter.HandleFunc("/login", s.handlerLoginUser)
 	userRouter.HandleFunc("/create", s.handlerCreateUser)
 	userRouter.HandleFunc("/delete", s.handlerDeleteUser).Queries("id", "{id:[0-9]+}")
+
+	MsgRouter := s.router.PathPrefix("/message").Subrouter()
+	MsgRouter.HandleFunc("/create", s.handlerCreateMsg)
 
 	s.router.Use(s.authMiddleware)
 	s.log.Service("configure Route with authMiddleware")

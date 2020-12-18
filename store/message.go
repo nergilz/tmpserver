@@ -9,11 +9,11 @@ type MsgStore struct {
 	db *database.DB
 }
 
-// MsgModel model request
+// MsgModel message model
 type MsgModel struct {
 	ID          int64  `json:"id"`
-	OwnerID     int64  `json:"owner"` // кто отправил
-	UserToID    int64  `json:"user"`  // кому отправил
+	OwnerID     int64  `json:"owner"` // who request
+	UserToID    int64  `json:"user"`  // who responce
 	Description string `json:"desc"`
 	MsgText     string `json:"text"`
 }
@@ -26,13 +26,22 @@ func InitMsgStore(db *database.DB) *MsgStore {
 }
 
 // CreateMsg create message in database
-func (ms *MsgStore) CreateMsg(m *MsgModel) error {
+func (ms *MsgStore) CreateMsg(msg *MsgModel) error {
 	var id int64
-	q := `INSERT INTO messages (ownerID, userID, desc, text) VALUES ($1,$2,$3,$4) RETURNING id`
-	err := ms.db.Conn().QueryRow(q, m.OwnerID, m.UserToID, m.Description, m.MsgText).Scan(&id)
+	q := `INSERT INTO messages (owner_id, user_id, description, text) VALUES ($1,$2,$3,$4) RETURNING id`
+	err := ms.db.Conn().QueryRow(q, msg.OwnerID, msg.UserToID, msg.Description, msg.MsgText).Scan(&id)
 	if err != nil {
 		return err
 	}
-	m.ID = id
+	msg.ID = id
+	return nil
+}
+
+// DeleteMsg delete message in database
+func (ms *MsgStore) DeleteMsg(msgID int64) error {
+	q := `DELETE FROM messages WHERE id=$1`
+	if err := ms.db.Conn().QueryRow(q, msgID).Err(); err != nil {
+		return err
+	}
 	return nil
 }

@@ -17,12 +17,16 @@ func main() {
 	}
 }
 
-//
 /*
-TODO
-add login user in postgresql
+Scenario
+1.sending mail withing the service
+2.sending and reciving mail from SMTP server
 
-questions
+TODO
+переписать создание user по инвайтной ссылке (сейчас не правильно, просто логиниться)
+
+Questions
 как найти user in /delete если нет id,
 всегда ли мы создаем claims со всеми полями
+
 */
