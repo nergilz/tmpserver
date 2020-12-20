@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/nergilz/tmpserver/utils"
+
 	"github.com/nergilz/tmpserver/store"
 
 	"github.com/0LuigiCode0/Library/logger"
@@ -44,7 +46,11 @@ func (s *Server) Start() error {
 	}
 	s.log.Service("connect DB")
 
-	if err = db.Init(); err != nil {
+	passwordSuperUser, err := utils.GetHashPassword("q1w2e3r4t5y6")
+	if err != nil {
+		s.log.Warningf("Cannot get hash superuser pass: %v", err)
+	}
+	if err = db.Init(passwordSuperUser); err != nil {
 		return err
 	}
 	s.db = db
@@ -57,16 +63,18 @@ func (s *Server) Start() error {
 
 func (s *Server) configureRoute() {
 	s.router.HandleFunc("/hello", s.hendlerHello())
+	s.router.HandleFunc("/api/login", s.handlerLoginUser)
 
 	userRouter := s.router.PathPrefix("/user").Subrouter()
-	userRouter.HandleFunc("/login", s.handlerLoginUser)
-	userRouter.HandleFunc("/create", s.handlerCreateUser)
+	// userRouter.HandleFunc("/login", s.handlerLoginUser)
+	userRouter.HandleFunc("/create", s.handlerCreateUser) // check role super_user
 	userRouter.HandleFunc("/delete", s.handlerDeleteUser).Queries("id", "{id:[0-9]+}")
 
-	MsgRouter := s.router.PathPrefix("/message").Subrouter()
-	MsgRouter.HandleFunc("/create", s.handlerCreateMsg)
+	msgRouter := s.router.PathPrefix("/message").Subrouter()
+	msgRouter.HandleFunc("/create", s.handlerCreateMsg)
 
-	s.router.Use(s.authMiddleware)
+	userRouter.Use(s.authMiddleware)
+	msgRouter.Use(s.authMiddleware)
 	s.log.Service("configure Route with authMiddleware")
 }
 

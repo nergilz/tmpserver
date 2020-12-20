@@ -1,8 +1,6 @@
 package store
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 
 	"github.com/nergilz/tmpserver/database"
@@ -53,11 +51,12 @@ func (us *UserStore) Delete(userID int64) error {
 func (us *UserStore) FindByID(id int64) (*UserModel, error) {
 	u := &UserModel{}
 	if err := us.db.Conn().QueryRow(
-		"SELECT id, login, password FROM users WHERE id = $1",
+		"SELECT id, login, password, role FROM users WHERE id = $1",
 		id).Scan( // заполняет модель UserModel
 		&u.ID,
 		&u.Login,
-		&u.Password, // ???
+		&u.Password,
+		&u.Role,
 	); err != nil {
 		return nil, err
 	}
@@ -68,40 +67,25 @@ func (us *UserStore) FindByID(id int64) (*UserModel, error) {
 func (us *UserStore) FindByLogin(login string) (*UserModel, error) {
 	u := &UserModel{}
 	if err := us.db.Conn().QueryRow(
-		"SELECT id, login, password FROM users WHERE login = $1",
+		"SELECT id, login, password, role FROM users WHERE login = $1",
 		login).Scan( // заполняет модель UserModel
 		&u.ID,
 		&u.Login,
-		&u.Password, // ???
+		&u.Password,
+		&u.Role,
 	); err != nil {
 		return nil, err
 	}
 	return u, nil
 }
 
-// GetHashPassword ...
-func GetHashPassword(s string) (string, error) {
-	data := []byte(s)
-	hash := sha256.New()
-	_, err := hash.Write(data)
-	if err != nil {
-		return "", err
-	}
-	s = hex.EncodeToString(hash.Sum(nil))
-	return s, nil
-}
-
 // Validate ...
 func (u *UserModel) Validate() error {
-	// add set for validation
 	if u.Login == "" {
 		return errors.New("Login cannnot de empty")
 	}
 	if u.Password == "" {
 		return errors.New("Password cannnot de empty")
-	}
-	if u.Role == "" || u.Role != "user" {
-		return errors.New("Role must be user")
 	}
 	return nil
 }

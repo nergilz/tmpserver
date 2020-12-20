@@ -44,7 +44,7 @@ func Connect(c *Config) (*DB, error) {
 }
 
 // Init init of database
-func (db *DB) Init() error {
+func (db *DB) Init(passwordSuperUser string) error {
 	qUsers := `CREATE TABLE IF NOT EXISTS users (
 		id bigserial not null PRIMARY KEY,
 		login varchar not null unique,
@@ -72,7 +72,7 @@ func (db *DB) Init() error {
 	db.log.Service("Init table messages")
 	// create superUser
 	qSuperUser := `INSERT INTO users (login, password, role) VALUES ($1, $2, $3)`
-	_, err = db.cdb.Exec(qSuperUser, "admin", "q1w2e3r4t5y6", "super_user")
+	_, err = db.cdb.Exec(qSuperUser, "admin", passwordSuperUser, "super_user")
 	if err != nil {
 		db.log.Warningf("not create superuser: %v", err)
 	} else {

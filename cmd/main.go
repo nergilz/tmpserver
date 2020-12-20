@@ -23,7 +23,9 @@ Scenario
 2.sending and reciving mail from SMTP server
 
 TODO
-переписать создание user по инвайтной ссылке (сейчас не правильно, просто логиниться)
+создание user по инвайтной ссылке
+дописать валидацию
+разобраться с AuthGuard()
 
 Questions
 как найти user in /delete если нет id,
