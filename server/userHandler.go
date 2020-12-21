@@ -21,7 +21,7 @@ func (s *Server) hendlerHello() http.HandlerFunc {
 	}
 }
 
-// handlerCreateUser run only with token, role: super_user
+// handlerCreateUser only for super_user
 func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	userFromCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
@@ -41,7 +41,6 @@ func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 
 	if userFromCtx.Role == "super_user" {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(fmt.Sprint(err)))
 		s.log.Warningf("user from context not super_user: %v", err)
 		return
 	}
@@ -49,15 +48,15 @@ func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(body, &userFromBody)
 	if err != nil {
-		s.log.Warningf("Not unmarshal json from r.Body : %v", err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Not unmarshal json : %v", http.StatusText(http.StatusBadRequest))))
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("Not unmarshal json from r.Body : %v", err)
 		return
 	}
 	if err := userFromBody.Validate(); err != nil {
-		s.log.Warningf("data is not valid : %v", err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("data is not valid : %v", http.StatusText(http.StatusBadRequest))))
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("data is not valid : %v", err)
 		return
 	}
 	hashPassword, err := utils.GetHashPassword(userFromBody.Password)
@@ -67,57 +66,42 @@ func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 		s.log.Warningf("not valid password: %v", err)
 		return
 	}
-
 	userFromBody.Password = hashPassword
 
 	err = s.us.Create(&userFromBody)
 	if err != nil {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte(fmt.Sprint(err)))
 		s.log.Errorf("User not create : %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("user not create %v", http.StatusText(http.StatusBadRequest))))
 		return
 	}
-	// create token for new user
-	JWTtoken, err := utils.CreateJWTtoken(&userFromBody, s.us.GetSecret())
-	if err != nil {
-		s.log.Errorf("JWTtoken not create : %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("JWTtoken not create %v", http.StatusText(http.StatusBadRequest))))
-		return
-	}
-	JWTresp, err := json.Marshal(JWTtoken)
-	if err != nil {
-		s.log.Errorf("JWTtoken not marshal josn : %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("JWTtoken not marshal josn %v", http.StatusText(http.StatusBadRequest))))
-		return
-	}
-	s.log.Info("create User, create JWT token")
+
+	s.log.Infof("Create User: %v", userFromBody.Login)
 	w.WriteHeader(http.StatusCreated)
-	w.Write(JWTresp)
 }
 
+// handlerDeleteUser only for super_user
 func (s *Server) handlerDeleteUser(w http.ResponseWriter, r *http.Request) {
 	u, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(http.StatusText(http.StatusForbidden)))
+		w.Write([]byte(fmt.Sprint(err)))
 		s.log.Warningf("not get user from context: %v", err)
 		return
 	}
 	vars := mux.Vars(r)
 	userID, ok := vars["id"]
 	if !ok {
-		s.log.Warning("cannot get the 'id' parameter from url")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("cannot get the 'id' parameter from url %v", http.StatusText(http.StatusBadRequest))))
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warning("cannot get the 'id' parameter from url")
 		return
 	}
 	ID, err := strconv.ParseInt(userID, 10, 64)
 	if err != nil {
-		s.log.Warningf("not int parametr : %v", err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("cannot delete User %v", http.StatusText(http.StatusBadRequest))))
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("not int parametr : %v", err)
 		return
 	}
 	if u.Role != "super_user" {
@@ -127,23 +111,24 @@ func (s *Server) handlerDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = s.us.Delete(ID); err != nil {
-		s.log.Errorf("cannot delete User : %v", err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("cannot delete User %v", http.StatusText(http.StatusBadRequest))))
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Errorf("cannot delete User : %v", err)
 		return
 	}
-	s.log.Infof("delete User id : %v", userID)
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("delete User, %v", http.StatusText(http.StatusOK))))
+	w.Write([]byte("Delete User"))
+	s.log.Infof("Delete User: %v, id: %v", u.Login, userID)
 }
 
 // handlerLoginUser login all users & create token
 func (s *Server) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		s.log.Warningf("Bad request body for login User: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Bad body request , %v", http.StatusText(http.StatusBadRequest))))
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("Bad request body for login User: %v", err)
 		return
 	}
 	defer r.Body.Close()
@@ -152,56 +137,76 @@ func (s *Server) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(body, &userFromBody)
 	if err != nil {
-		s.log.Warningf("Not unmarshal json from r.Body : %v", err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Not unmarshal json : %v", http.StatusText(http.StatusBadRequest))))
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("Not unmarshal json from r.Body : %v", err)
 		return
 	}
+
 	if err := userFromBody.Validate(); err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(fmt.Sprint(err)))
 		s.log.Warningf("data is not valid : %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("data is not valid : %v", http.StatusText(http.StatusBadRequest))))
 		return
 	}
 
 	userFromDB, err := s.us.FindByLogin(userFromBody.Login)
 	if err != nil {
-		s.log.Warningf("Not find user by login : %v", err)
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(fmt.Sprintf("Not unmarshal json : %v", http.StatusText(http.StatusForbidden))))
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("User not found: %v", err)
 		return
 	}
 	hashPassUserFromBody, err := utils.GetHashPassword(userFromBody.Password)
 	if err != nil {
-		s.log.Warningf("No get hash password : %v", err)
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(fmt.Sprintf("No get hash password : %v", http.StatusText(http.StatusForbidden))))
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("Cannot get hash password : %v", err)
 		return
 	}
 	if hashPassUserFromBody != userFromDB.Password {
-		s.log.Warningf("No get hash password : %v", err)
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(fmt.Sprintf("No get hash password : %v", http.StatusText(http.StatusForbidden))))
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("Invalid Password : %v", err)
 		return
 	}
-	/*
-		тут создается токен юзера из базы
-	*/
-	JWTtoken, err := utils.CreateJWTtoken(userFromDB, s.us.GetSecret()) // !!!
+	//	create token:
+	JWTtoken, err := utils.CreateJWTtoken(userFromDB, s.us.GetSecret())
 	if err != nil {
-		s.log.Errorf("JWTtoken for login not create : %v", err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("JWTtoken not create %v", http.StatusText(http.StatusBadRequest))))
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Errorf("JWTtoken not create : %v", err)
 		return
 	}
 	JWTresp, err := json.Marshal(JWTtoken)
 	if err != nil {
-		s.log.Errorf("JWTtoken not marshal josn : %v", err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("JWTtoken not marshal josn %v", http.StatusText(http.StatusBadRequest))))
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Errorf("JWTtoken not marshal in json : %v", err)
 		return
 	}
-	s.log.Info("Create JWT token for Login User")
-	w.WriteHeader(http.StatusCreated)
 	w.Write(JWTresp)
+	w.WriteHeader(http.StatusCreated)
+	s.log.Infof("Login user: %v & create JWTtoken", userFromDB.Login)
 }
+
+// // handlerRegistration registration user without token
+// func (s *Server) handlerRegistration(w http.ResponseWriter, r *http.Request) {
+
+// // create token for new user
+// JWTtoken, err := utils.CreateJWTtoken(&userFromBody, s.us.GetSecret())
+// if err != nil {
+// 	s.log.Errorf("JWTtoken not create : %v", err)
+// 	w.WriteHeader(http.StatusMethodNotAllowed)
+// 	w.Write([]byte(fmt.Sprint(err)))
+// 	return
+// }
+// JWTresp, err := json.Marshal(JWTtoken)
+// if err != nil {
+// 	w.WriteHeader(http.StatusMethodNotAllowed)
+// 	w.Write([]byte(fmt.Sprint(err)))
+// 	s.log.Errorf("JWTtoken not marshal josn : %v", err)
+// 	return
+// }
+// w.Write(JWTresp)
+// }
