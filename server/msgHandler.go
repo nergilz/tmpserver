@@ -11,6 +11,13 @@ import (
 
 // created msg in db
 func (s *Server) handlerCreateMsg(w http.ResponseWriter, r *http.Request) {
+	userFromCtx, err := GetUserFromContext(r, СtxKeyUser)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("user not auth %v", err)
+		return
+	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -21,13 +28,7 @@ func (s *Server) handlerCreateMsg(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var msgFromBody store.MsgModel
-	userFromCtx, err := GetUserFromContext(r, СtxKeyUser)
-	if err != nil {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(fmt.Sprint(err)))
-		s.log.Warningf("user not auth %v", err)
-		return
-	}
+
 	err = json.Unmarshal(body, &msgFromBody)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -35,14 +36,17 @@ func (s *Server) handlerCreateMsg(w http.ResponseWriter, r *http.Request) {
 		s.log.Warningf("cannot body unmarshal json %v", err)
 		return
 	}
-	// TODO
-	// get validate body data
-	// get id user_to (from r.body)
+	if err = msgFromBody.Validate(); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("cannot validate message %v", err)
+		return
+	}
 	msgForCreate := &store.MsgModel{
-		Description: msgFromBody.Description,
-		MsgText:     msgFromBody.MsgText,
-		OwnerID:     userFromCtx.ID,
-		//UserToID:
+		Title:   msgFromBody.Title,
+		MsgText: msgFromBody.MsgText,
+		OwnerID: userFromCtx.ID,
+		UserTo:  msgFromBody.UserTo,
 	}
 	err = s.ms.CreateMsg(msgForCreate)
 	if err != nil {
@@ -51,6 +55,6 @@ func (s *Server) handlerCreateMsg(w http.ResponseWriter, r *http.Request) {
 		s.log.Warningf("cannot create msg %v", err)
 		return
 	}
-	s.log.Info("create message")
 	w.WriteHeader(http.StatusCreated)
+	s.log.Info("create message")
 }

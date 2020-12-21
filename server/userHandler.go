@@ -39,7 +39,7 @@ func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if userFromCtx.Role == "super_user" {
+	if userFromCtx.Role != "super_user" {
 		w.WriteHeader(http.StatusForbidden)
 		s.log.Warningf("user from context not super_user: %v", err)
 		return
@@ -186,7 +186,7 @@ func (s *Server) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(JWTresp)
-	w.WriteHeader(http.StatusCreated)
+	// w.WriteHeader(http.StatusOK)
 	s.log.Infof("Login user: %v & create JWTtoken", userFromDB.Login)
 }
 

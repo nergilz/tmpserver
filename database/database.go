@@ -60,8 +60,8 @@ func (db *DB) Init(passwordSuperUser string) error {
 	qMessages := `CREATE TABLE IF NOT EXISTS messages (
 		id bigserial not null PRIMARY KEY,
 		owner_id BIGINT REFERENCES users (id),
-		user_id INTEGER,
-		description VARCHAR(100),
+		user_to VARCHAR(100),
+		title VARCHAR(100),
 		text TEXT not null
 	)`
 	_, err = db.cdb.Exec(qMessages)
