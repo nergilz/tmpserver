@@ -19,7 +19,7 @@ const (
 // middleware
 func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rawToken := r.Header.Get("Authorization")
+		rawToken := r.Header.Get("auth")
 		tokenMetadata, err := utils.VerifyJWTtoken(rawToken, s.us.GetSecret())
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)

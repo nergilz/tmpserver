@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 
+	"github.com/0LuigiCode0/Library/logger"
 	"github.com/nergilz/tmpserver/database"
 )
 
@@ -21,9 +22,10 @@ type UserModel struct {
 }
 
 // InitUserStore ..
-func InitUserStore(db *database.DB) *UserStore {
+func InitUserStore(db *database.DB, log *logger.Logger) *UserStore {
 	us := new(UserStore)
 	us.db = db
+	log.Service("init user store")
 	return us
 }
 

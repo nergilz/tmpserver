@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/nergilz/tmpserver/store"
 )
 
@@ -43,10 +45,9 @@ func (s *Server) handlerCreateMsg(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	msgForCreate := &store.MsgModel{
-		Title:   msgFromBody.Title,
-		MsgText: msgFromBody.MsgText,
-		OwnerID: userFromCtx.ID,
-		UserTo:  msgFromBody.UserTo,
+		MsgText:  msgFromBody.MsgText,
+		SenderID: userFromCtx.ID,
+		ChatID:   msgFromBody.ChatID,
 	}
 	err = s.ms.CreateMsg(msgForCreate)
 	if err != nil {
@@ -57,4 +58,39 @@ func (s *Server) handlerCreateMsg(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 	s.log.Info("create message")
+}
+
+// delete message in db, get msg_id from URL
+func (s *Server) hendlerDeleteMsg(w http.ResponseWriter, r *http.Request) {
+	uCtx, err := GetUserFromContext(r, СtxKeyUser)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("not get user from context: %v", err)
+		return
+	}
+	vars := mux.Vars(r)
+	msgIDfromURL, ok := vars["msg_id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warning("cannot get msg_id parameter from url")
+		return
+	}
+	msgID, err := strconv.ParseInt(msgIDfromURL, 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Warningf("parameter not int: %v", err)
+		return
+	}
+	if err = s.ms.DeleteMsg(msgID); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprint(err)))
+		s.log.Errorf("cannot delete message : %v", err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Delete Message"))
+	s.log.Infof("Delete Message: %v, id: %v", uCtx.Login, msgID)
 }

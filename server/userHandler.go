@@ -90,7 +90,7 @@ func (s *Server) handlerDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	vars := mux.Vars(r)
-	userID, ok := vars["id"]
+	userID, ok := vars["user_id"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprint(err)))
@@ -116,7 +116,6 @@ func (s *Server) handlerDeleteUser(w http.ResponseWriter, r *http.Request) {
 		s.log.Errorf("cannot delete User : %v", err)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Delete User"))
 	s.log.Infof("Delete User: %v, id: %v", u.Login, userID)

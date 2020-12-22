@@ -22,6 +22,7 @@ type Server struct {
 	db       *database.DB
 	us       *store.UserStore
 	ms       *store.MsgStore
+	cs       *store.ChatStore
 }
 
 // New server
@@ -54,9 +55,9 @@ func (s *Server) Start() error {
 		return err
 	}
 	s.db = db
-	s.us = store.InitUserStore(db)
-	s.ms = store.InitMsgStore(db)
-	s.log.Service("Init DB, userStrore, msgStore")
+	s.us = store.InitUserStore(db, s.log)
+	s.ms = store.InitMsgStore(db, s.log)
+	s.cs = store.InitChartStore(db, s.log)
 
 	return http.ListenAndServe(s.BindAddr, s.router)
 }
@@ -66,15 +67,19 @@ func (s *Server) configureRoute() {
 	s.router.HandleFunc("/api/login", s.handlerLoginUser)
 
 	userRouter := s.router.PathPrefix("/user").Subrouter()
-	// userRouter.HandleFunc("/login", s.handlerLoginUser)
-	userRouter.HandleFunc("/create", s.handlerCreateUser) // check role super_user
-	userRouter.HandleFunc("/delete", s.handlerDeleteUser).Queries("id", "{id:[0-9]+}")
+	userRouter.HandleFunc("/create", s.handlerCreateUser)
+	userRouter.HandleFunc("/delete", s.handlerDeleteUser).Queries("user_id", "{id:[0-9]+}")
 
 	msgRouter := s.router.PathPrefix("/message").Subrouter()
 	msgRouter.HandleFunc("/create", s.handlerCreateMsg)
+	msgRouter.HandleFunc("/delete", s.hendlerDeleteMsg).Queries("msg_id", "{id:[0-9]+}")
+
+	chatRouter := s.router.PathPrefix("chat").Subrouter()
+	chatRouter.HandleFunc("/sendmsg", s.sendMessage)
 
 	userRouter.Use(s.authMiddleware)
 	msgRouter.Use(s.authMiddleware)
+	chatRouter.Use(s.authMiddleware)
 	s.log.Service("configure Route with authMiddleware")
 }
 
@@ -82,7 +87,7 @@ func (s *Server) configureRoute() {
 func GetUserFromContext(r *http.Request, CtxKeyUser CtxKey) (*store.UserModel, error) {
 	valueCtx := r.Context().Value(CtxKeyUser)
 	if valueCtx == nil {
-		return nil, errors.New("Context is empty")
+		return nil, errors.New("cannot get user from ctx, context is empty")
 	}
 	userCtx := valueCtx.(*store.UserModel)
 	return userCtx, nil

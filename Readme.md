@@ -1,15 +1,23 @@
-## Simple server for send messagges
+## Simple Messager
+
+##### Client-Server architecture 
 
 #### done
-+ crud DB for users & msg 
-+ auth users (only for super_user)
++ crud DB for users & msg & chat
++ auth users
 + database: [Postgresql](https://www.postgresql.org/)
 + middleware
 + JWT token
 
 #### TODO
-+ peer to peer messanger
++ chats
++ cryptographics
++ finish up validation
++ add file save in chat 
+
+---
 + websocket
++ peer to peer messanger
 
 ---
 
