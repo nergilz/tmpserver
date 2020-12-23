@@ -1,6 +1,6 @@
 ## Simple Messager
 
-##### Client-Server architecture 
+#### Client-Server architecture 
 
 #### done
 + crud DB for users & msg & chat
@@ -14,12 +14,16 @@
 + cryptographics
 + finish up validation
 + add file save in chat 
-
----
 + websocket
 + peer to peer messanger
-
 ---
 
-#### create for fun
+#### Installation
+`bash
+git clone github.com/nergilz/tmpserver
+cd tmpserver
+./main
+`
+---
 
+#### create for fun & practice

@@ -2,6 +2,7 @@ package store
 
 import (
 	"github.com/0LuigiCode0/Library/logger"
+	"github.com/lib/pq"
 	"github.com/nergilz/tmpserver/database"
 )
 
@@ -13,8 +14,8 @@ type ChatStore struct {
 // ChatModel chat model
 type ChatModel struct {
 	ID      int64   `json:"chat_id"`
-	MsgIDs  []int64 `json:"messages_id"`
-	UserIDs []int64 `json:"users_id"`
+	Name    string  `json:"chat_name"`
+	UserIDs []int64 `json:"users_ids"`
 	Private bool    `json:"private"`
 }
 
@@ -26,14 +27,26 @@ func InitChartStore(db *database.DB, log *logger.Logger) *ChatStore {
 	return cs
 }
 
+/*
+	сделать проверку SQL запросом
+*/
 // CreateChat ...
 func (cs *ChatStore) CreateChat(cm *ChatModel) error {
 	var id int64
-	q := `INSERT INTO chats (msg_id, user_id, private) VALUES ($1, $2, $3) RETURNING id`
-	if err := cs.db.Conn().QueryRow(q, cm.MsgIDs, cm.UserIDs, cm.Private).Scan(&id); err != nil {
+	q := `INSERT INTO chats (user_id, private) VALUES ($1, $2) RETURNING id`
+	if err := cs.db.Conn().QueryRow(
+		q,
+		pq.Array(cm.UserIDs),
+		cm.Private).Scan(&id); err != nil {
 		return err
 	}
 	cm.ID = id
+	return nil
+}
+
+// UpdateChat ..
+func (cs *ChatStore) UpdateChat(cm *ChatModel) error {
+
 	return nil
 }
 

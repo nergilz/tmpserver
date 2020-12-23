@@ -59,25 +59,10 @@ func (db *DB) Init(passwordSuperUser string) error {
 	}
 	db.log.Service("init table users")
 
-	// create table messages
-	qMessages := `CREATE TABLE IF NOT EXISTS messages (
-		id BIGSERIAL NOT NULL PRIMARY KEY,
-		owner_id BIGINT REFERENCES users (id),
-		chat_id INTEGER,
-		text TEXT NOT NULL
-	)`
-	_, err = db.cdb.Exec(qMessages)
-	if err != nil {
-		db.log.Errorf("not create table messages: %v", err)
-		return err
-	}
-	db.log.Service("init table messages")
-
 	// create table chats
 	qChats := `CREATE TABLE IF NOT EXISTS chats (
 		id BIGSERIAL NOT NULL PRIMARY KEY,
-		msg_id INTEGER,
-		user_id INTEGER,
+		user_id INTEGER[],
 		private BOOL
 	)`
 	_, err = db.cdb.Exec(qChats)
@@ -86,6 +71,20 @@ func (db *DB) Init(passwordSuperUser string) error {
 		return err
 	}
 	db.log.Service("init table chats")
+
+	// create table messages
+	qMessages := `CREATE TABLE IF NOT EXISTS messages (
+		id BIGSERIAL NOT NULL PRIMARY KEY,
+		sender_id BIGINT REFERENCES users (id),
+		chat_id INTEGER REFERENCES chats (id),
+		text TEXT NOT NULL
+	)`
+	_, err = db.cdb.Exec(qMessages)
+	if err != nil {
+		db.log.Errorf("not create table messages: %v", err)
+		return err
+	}
+	db.log.Service("init table messages")
 
 	// create superUser
 	qSuperUser := `INSERT INTO users (login, password, role) VALUES ($1, $2, $3)`

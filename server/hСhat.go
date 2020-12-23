@@ -13,15 +13,14 @@ import (
 TODO тут все переделать
 	принять сообщение msgModel от userFromContext
 	в chat записать users ids
-	привязать chat к message в db
 */
 
-func (s *Server) sendMessage(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handlerCreateChat(w http.ResponseWriter, r *http.Request) {
 	uCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte(fmt.Sprint(err)))
-		s.log.Warningf("user not auth %v", err)
+		s.log.Warningf("not get user from context: %v", err)
 		return
 	}
 	body, err := ioutil.ReadAll(r.Body)
@@ -43,12 +42,9 @@ func (s *Server) sendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO validateChat()
-
-	userids := make([]int64, 0)
-	userids = append(userids, uCtx.ID)
+	chatFromBody.UserIDs = append(chatFromBody.UserIDs, uCtx.ID)
 	chatForCreate := &store.ChatModel{
-		MsgIDs:  chatFromBody.MsgIDs,
-		UserIDs: userids,
+		UserIDs: chatFromBody.UserIDs,
 		Private: chatFromBody.Private,
 	}
 	if err = s.cs.CreateChat(chatForCreate); err != nil {
@@ -61,10 +57,10 @@ func (s *Server) sendMessage(w http.ResponseWriter, r *http.Request) {
 	s.log.Info("create chat")
 }
 
-func (s *Server) updateChat(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handlerGetChat(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) deleteChat(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handlerGetListChats(w http.ResponseWriter, r *http.Request) {
 
 }

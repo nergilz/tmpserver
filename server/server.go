@@ -74,8 +74,9 @@ func (s *Server) configureRoute() {
 	msgRouter.HandleFunc("/create", s.handlerCreateMsg)
 	msgRouter.HandleFunc("/delete", s.hendlerDeleteMsg).Queries("msg_id", "{id:[0-9]+}")
 
-	chatRouter := s.router.PathPrefix("chat").Subrouter()
-	chatRouter.HandleFunc("/sendmsg", s.sendMessage)
+	chatRouter := s.router.PathPrefix("/chat").Subrouter()
+	chatRouter.HandleFunc("/create", s.handlerCreateChat)
+	chatRouter.HandleFunc("/get", s.handlerGetChat).Queries("chat_id", "{id:[0-9]+}")
 
 	userRouter.Use(s.authMiddleware)
 	msgRouter.Use(s.authMiddleware)

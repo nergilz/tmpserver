@@ -15,8 +15,8 @@ type MsgStore struct {
 // MsgModel message model
 type MsgModel struct {
 	ID       int64  `json:"id"`
-	SenderID int64  `json:"owner"` // who send message
-	ChatID   int64  `json:"chat"`  // to whon send message
+	SenderID int64  `json:"sender_id"` // who send message
+	ChatID   int64  `json:"chat_id"`   // to whon send message
 	MsgText  string `json:"text"`
 }
 
