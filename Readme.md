@@ -18,12 +18,4 @@
 + peer to peer messanger
 ---
 
-#### Installation
-`bash
-git clone github.com/nergilz/tmpserver
-cd tmpserver
-./main
-`
----
-
 #### create for fun & practice
