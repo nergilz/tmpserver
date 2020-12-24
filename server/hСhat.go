@@ -2,41 +2,33 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/nergilz/tmpserver/store"
 )
 
-/*
-TODO тут все переделать
-	принять сообщение msgModel от userFromContext
-	в chat записать users ids
-*/
-
-func (s *Server) handlerCreateChat(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handlerSendMessage(w http.ResponseWriter, r *http.Request) {
 	uCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(fmt.Sprint(err)))
+		w.Write([]byte(err.Error()))
 		s.log.Warningf("not get user from context: %v", err)
 		return
 	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprint(err)))
+		w.Write([]byte(err.Error()))
 		s.log.Warningf("not read the body %v", err)
 		return
 	}
 	defer r.Body.Close()
 
 	var chatFromBody store.ChatModel
-
 	if err = json.Unmarshal(body, &chatFromBody); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprint(err)))
+		w.Write([]byte(err.Error()))
 		s.log.Warningf("cannot body unmarshal json %v", err)
 		return
 	}
@@ -49,7 +41,7 @@ func (s *Server) handlerCreateChat(w http.ResponseWriter, r *http.Request) {
 	}
 	if err = s.cs.CreateChat(chatForCreate); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprint(err)))
+		w.Write([]byte(err.Error()))
 		s.log.Warningf("cannot create chat %v", err)
 		return
 	}
@@ -57,9 +49,41 @@ func (s *Server) handlerCreateChat(w http.ResponseWriter, r *http.Request) {
 	s.log.Info("create chat")
 }
 
-func (s *Server) handlerGetChat(w http.ResponseWriter, r *http.Request) {
+// func (s *Server) handlerCheckChat(w http.ResponseWriter, r *http.Request) {
+// 	uCtx, err := GetUserFromContext(r, СtxKeyUser)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusForbidden)
+// 		w.Write([]byte(err.Error()))
+// 		s.log.Warningf("not get user from context: %v", err)
+// 		return
+// 	}
+// 	body, err := ioutil.ReadAll(r.Body)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		w.Write([]byte(err.Error()))
+// 		s.log.Warningf("not read the body %v", err)
+// 		return
+// 	}
+// 	defer r.Body.Close()
 
-}
+// 	var chatFromBody store.ChatModel
+// 	if err = json.Unmarshal(body, &chatFromBody); err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		w.Write([]byte(err.Error()))
+// 		s.log.Warningf("cannot body unmarshal json %v", err)
+// 		return
+// 	}
+// 	_, err = s.cs.CheckChat()
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		w.Write([]byte(err.Error()))
+// 		s.log.Errorf("cannot check chat %v", err)
+// 		return
+// 	}
+// 	w.WriteHeader(http.StatusCreated)
+// 	s.log.Info("create chat")
+
+// }
 
 func (s *Server) handlerGetListChats(w http.ResponseWriter, r *http.Request) {
 

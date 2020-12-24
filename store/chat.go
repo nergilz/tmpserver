@@ -33,7 +33,7 @@ func InitChartStore(db *database.DB, log *logger.Logger) *ChatStore {
 // CreateChat ...
 func (cs *ChatStore) CreateChat(cm *ChatModel) error {
 	var id int64
-	q := `INSERT INTO chats (user_id, private) VALUES ($1, $2) RETURNING id`
+	q := `INSERT INTO chats (user_id, private) VALUES($1, $2) RETURNING id`
 	if err := cs.db.Conn().QueryRow(
 		q,
 		pq.Array(cm.UserIDs),
@@ -44,9 +44,24 @@ func (cs *ChatStore) CreateChat(cm *ChatModel) error {
 	return nil
 }
 
+// CheckChat ..
+func (cs *ChatStore) CheckChat() (bool, error) {
+	var id int64
+	q := `SELECT id FROM chats ORDER BY id DESC LIMIT 1 WHERE id=$1 VALUES($1)`
+	if err := cs.db.Conn().QueryRow(q).Scan(
+		&id,
+	); err != nil {
+		return false, err
+	}
+	if id != 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
 // UpdateChat ..
 func (cs *ChatStore) UpdateChat(cm *ChatModel) error {
-
+	// q := ``
 	return nil
 }
 

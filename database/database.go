@@ -59,25 +59,25 @@ func (db *DB) Init(passwordSuperUser string) error {
 	}
 	db.log.Service("init table users")
 
-	// create table chats
-	qChats := `CREATE TABLE IF NOT EXISTS chats (
-		id BIGSERIAL NOT NULL PRIMARY KEY,
-		user_id INTEGER[],
-		private BOOL
-	)`
-	_, err = db.cdb.Exec(qChats)
-	if err != nil {
-		db.log.Errorf("not create table chats", err)
-		return err
-	}
-	db.log.Service("init table chats")
+	// // create table chats
+	// qChats := `CREATE TABLE IF NOT EXISTS chats (
+	// 	id BIGSERIAL NOT NULL PRIMARY KEY,
+	// 	user_id INTEGER[],
+	// 	private BOOL
+	// )`
+	// _, err = db.cdb.Exec(qChats)
+	// if err != nil {
+	// 	db.log.Errorf("not create table chats", err)
+	// 	return err
+	// }
+	// db.log.Service("init table chats")
 
 	// create table messages
 	qMessages := `CREATE TABLE IF NOT EXISTS messages (
 		id BIGSERIAL NOT NULL PRIMARY KEY,
-		sender_id BIGINT REFERENCES users (id),
-		chat_id INTEGER REFERENCES chats (id),
-		text TEXT NOT NULL
+		to_id BIGINT REFERENCES users (id),
+		from_id INTEGER REFERENCES users (id),
+		content TEXT NOT NULL
 	)`
 	_, err = db.cdb.Exec(qMessages)
 	if err != nil {
