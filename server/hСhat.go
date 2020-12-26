@@ -24,6 +24,7 @@ func (s *Server) handlerSendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+	//-----------------------------------------------------------------------------------
 
 	var chatFromBody store.ChatModel
 	if err = json.Unmarshal(body, &chatFromBody); err != nil {
@@ -82,9 +83,8 @@ func (s *Server) handlerSendMessage(w http.ResponseWriter, r *http.Request) {
 // 	}
 // 	w.WriteHeader(http.StatusCreated)
 // 	s.log.Info("create chat")
-
 // }
 
-func (s *Server) handlerGetListChats(w http.ResponseWriter, r *http.Request) {
+// func (s *Server) handlerGetListChats(w http.ResponseWriter, r *http.Request) {
 
-}
+// }

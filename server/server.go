@@ -72,17 +72,17 @@ func (s *Server) configureRoute() {
 
 	msgRouter := s.router.PathPrefix("/message").Subrouter()
 	msgRouter.HandleFunc("/send", s.handlerSendMsg)
-	msgRouter.HandleFunc("/get", s.hendlerGetInMsg)
+	msgRouter.HandleFunc("/getall", s.hendlerGetAllMsg)
 	msgRouter.HandleFunc("/delete", s.hendlerDeleteMsg).Queries("msg_id", "{id:[0-9]+}")
 
-	// chatRouter := s.router.PathPrefix("/chat").Subrouter()
-	// chatRouter.HandleFunc("/create", s.handlerSendMessage)
-	// chatRouter.HandleFunc("/check", s.handlerCheckChat)
+	chatRouter := s.router.PathPrefix("/chat").Subrouter()
+	chatRouter.HandleFunc("/send", s.handlerSendMessage)
 	// chatRouter.HandleFunc("/get", s.handlerGetListChats).Queries("chat_id", "{id:[0-9]+}")
+	// chatRouter.HandleFunc("/check", s.handlerCheckChat)
 
 	userRouter.Use(s.authMiddleware)
 	msgRouter.Use(s.authMiddleware)
-	// chatRouter.Use(s.authMiddleware)
+	chatRouter.Use(s.authMiddleware)
 	s.log.Service("configure Route with authMiddleware")
 }
 

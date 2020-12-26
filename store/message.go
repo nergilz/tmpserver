@@ -58,7 +58,7 @@ func (ms *MsgStore) DeleteMsg(msgID int64) error {
 // FindMsgByID return msg by id
 func (ms *MsgStore) FindMsgByID(msgID int64) (*MsgModel, error) {
 	msg := &MsgModel{}
-	q := `SELECT owner_id, chat_id, text FROM messages WHERE id=$1 VALUES ($1)`
+	q := `SELECT id, to_id, from_id, content FROM messages WHERE id=$1 VALUES ($1)`
 	if err := ms.db.Conn().QueryRow(q, msgID).Scan(
 		&msg.ToID,
 		&msg.FromID,
@@ -69,25 +69,32 @@ func (ms *MsgStore) FindMsgByID(msgID int64) (*MsgModel, error) {
 	return msg, nil
 }
 
-// FindMsgByLogin ..
-func (ms *MsgStore) FindMsgByLogin(login string) (*MsgModel, error) {
-	msg := &MsgModel{}
-	q := `SELECT owner_id, chat_id, text FROM messages WHERE id=$1 VALUES ($1)`
-	if err := ms.db.Conn().QueryRow(q, login).Scan(
-		&msg.ToID,
-		&msg.FromID,
-		&msg.Content,
-	); err != nil {
+// FindAllIncomingMsg все принятые пользователем
+func (ms *MsgStore) FindAllIncomingMsg(userID int64) ([]*MsgModel, error) {
+	messages := []*MsgModel{}
+	q := `SELECT * FROM messages where to_id=$1`
+	rows, err := ms.db.Conn().Query(q, userID)
+	if err != nil {
+
 		return nil, err
 	}
-	return msg, nil
+	for rows.Next() {
+		item := new(MsgModel)
+		if err := rows.Scan(&item.ID, &item.ToID, &item.FromID, &item.Content); err != nil {
+			return nil, err
+		}
+		messages = append(messages, item)
+	}
+	rows.Close()
+
+	return messages, nil
 }
 
-// FindAllIncomingMsg все принятые пользователем
-func (ms *MsgStore) FindAllIncomingMsg(userFromCtxID int64) ([]*MsgModel, error) {
+// FindAllOutgoingMsg все отправленные пользователем
+func (ms *MsgStore) FindAllOutgoingMsg(userID int64) ([]*MsgModel, error) {
 	messages := []*MsgModel{}
 	q := `SELECT * FROM messages where from_id=$1`
-	rows, err := ms.db.Conn().Query(q, userFromCtxID)
+	rows, err := ms.db.Conn().Query(q, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +110,25 @@ func (ms *MsgStore) FindAllIncomingMsg(userFromCtxID int64) ([]*MsgModel, error)
 	return messages, nil
 }
 
-// func (ms *MsgStore) FindAllOutgoingMsg(fromID int64) ([]*MsgModel, error) {}
+// FindAllMsg incoming & outgoing user messages (где user отправитель и получатель)
+func (ms *MsgStore) FindAllMsg(userID int64) ([]*MsgModel, error) {
+	messages := []*MsgModel{}
+	q := `SELECT * FROM messages where to_id=$1 OR from_id=$2`
+	rows, err := ms.db.Conn().Query(q, userID, userID)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		item := new(MsgModel)
+		if err := rows.Scan(&item.ID, &item.ToID, &item.FromID, &item.Content); err != nil {
+			return nil, err
+		}
+		messages = append(messages, item)
+	}
+	rows.Close()
+
+	return messages, nil
+}
 
 // Validate ..
 func (msg *MsgModel) Validate() error {
@@ -119,7 +144,7 @@ func (msg *SendMsgRequestModel) SendValidate() error {
 		return errors.New("login cannot be empty")
 	}
 	if msg.Content == "" {
-		return errors.New("text cannot be empty")
+		return errors.New("content cannot be empty")
 	}
 	return nil
 }

@@ -66,7 +66,7 @@ func (s *Server) handlerSendMsg(w http.ResponseWriter, r *http.Request) {
 }
 
 // hendlerGetMsg ..
-func (s *Server) hendlerGetInMsg(w http.ResponseWriter, r *http.Request) {
+func (s *Server) hendlerGetAllMsg(w http.ResponseWriter, r *http.Request) {
 	userFromCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
@@ -74,7 +74,7 @@ func (s *Server) hendlerGetInMsg(w http.ResponseWriter, r *http.Request) {
 		s.log.Warningf("user not auth %v", err)
 		return
 	}
-	messages, err := s.ms.FindAllIncomingMsg(userFromCtx.ID)
+	messages, err := s.ms.FindAllMsg(userFromCtx.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
@@ -89,10 +89,10 @@ func (s *Server) hendlerGetInMsg(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(resp)
-	s.log.Infof("get all incoming msg for %v", userFromCtx.Login)
+	s.log.Infof("get all msg for %v", userFromCtx.Login)
 }
 
-// delete message in db, get msg_id from URL
+// delete message in db (get msg_id from URL)
 func (s *Server) hendlerDeleteMsg(w http.ResponseWriter, r *http.Request) {
 	uCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {

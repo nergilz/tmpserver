@@ -47,30 +47,32 @@ func Connect(c *Config) (*DB, error) {
 func (db *DB) Init(passwordSuperUser string) error {
 	// create table users
 	qUsers := `CREATE TABLE IF NOT EXISTS users (
-		id bigserial not null PRIMARY KEY,
-		login varchar not null unique,
-		password varchar not null,
-		role varchar not null
+		id BIGSERIAL NOT NULL PRIMARY KEY,
+		login VARCHAR NOT NULL UNIQUE,
+		password VARCHAR NOT NULL,
+		role VARCHAR NOT NULL
 	)`
 	_, err := db.cdb.Exec(qUsers)
 	if err != nil {
-		db.log.Errorf("not create table users: %v", err)
+		db.log.Errorf("not create table 'users': %v", err)
 		return err
 	}
 	db.log.Service("init table users")
 
-	// // create table chats
-	// qChats := `CREATE TABLE IF NOT EXISTS chats (
-	// 	id BIGSERIAL NOT NULL PRIMARY KEY,
-	// 	user_id INTEGER[],
-	// 	private BOOL
-	// )`
-	// _, err = db.cdb.Exec(qChats)
-	// if err != nil {
-	// 	db.log.Errorf("not create table chats", err)
-	// 	return err
-	// }
-	// db.log.Service("init table chats")
+	// create table chats
+	qChats := `CREATE TABLE IF NOT EXISTS chats (
+		id BIGSERIAL NOT NULL PRIMARY KEY,
+		name VARCHAR NOT NULL,
+		user_ids INTEGER[],
+		private BOOL,
+		public BOOL
+	)`
+	_, err = db.cdb.Exec(qChats)
+	if err != nil {
+		db.log.Errorf("not create table 'chats': %v", err)
+		return err
+	}
+	db.log.Service("init table chats")
 
 	// create table messages
 	qMessages := `CREATE TABLE IF NOT EXISTS messages (
@@ -81,7 +83,7 @@ func (db *DB) Init(passwordSuperUser string) error {
 	)`
 	_, err = db.cdb.Exec(qMessages)
 	if err != nil {
-		db.log.Errorf("not create table messages: %v", err)
+		db.log.Errorf("not create table 'messages': %v", err)
 		return err
 	}
 	db.log.Service("init table messages")

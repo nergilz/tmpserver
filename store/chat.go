@@ -16,7 +16,14 @@ type ChatModel struct {
 	ID      int64   `json:"chat_id"`
 	Name    string  `json:"chat_name"`
 	UserIDs []int64 `json:"users_ids"`
-	Private bool    `json:"private"`
+	Private bool    `json:"private"` // for tow
+	// Public  bool    `json:"public"`  // for many people
+}
+
+// SendChatRequestModel send msg in chat request
+type SendChatRequestModel struct {
+	ID      int64  `json:"chat_id"`
+	Content string `json:"content"`
 }
 
 // InitChartStore ..
@@ -27,11 +34,8 @@ func InitChartStore(db *database.DB, log *logger.Logger) *ChatStore {
 	return cs
 }
 
-/*
-	сделать проверку SQL запросом
-*/
 // CreateChat ...
-func (cs *ChatStore) CreateChat(cm *ChatModel) error {
+func (cs *ChatStore) CreateChat(cm *ChatModel) error { // сделать проверку SQL запросом
 	var id int64
 	q := `INSERT INTO chats (user_id, private) VALUES($1, $2) RETURNING id`
 	if err := cs.db.Conn().QueryRow(

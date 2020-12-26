@@ -20,6 +20,7 @@ const (
 func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawToken := r.Header.Get("auth")
+		// if rawToken != "" {
 		tokenMetadata, err := utils.VerifyJWTtoken(rawToken, s.us.GetSecret())
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
@@ -42,6 +43,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		ctx := context.WithValue(r.Context(), СtxKeyUser, u) // add user по ключу в context
-		next.ServeHTTP(w, r.WithContext(ctx))                // передали в обработчик
+		next.ServeHTTP(w, r.WithContext(ctx))
+		// }
 	})
 }
