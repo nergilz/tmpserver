@@ -178,24 +178,3 @@ func (s *Server) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(JWTresp)
 	s.log.Infof("Login user: %v & create JWTtoken", userFromDB.Login)
 }
-
-// // handlerRegistration registration user without token
-// func (s *Server) handlerRegistration(w http.ResponseWriter, r *http.Request) {
-
-// // create token for new user
-// JWTtoken, err := utils.CreateJWTtoken(&userFromBody, s.us.GetSecret())
-// if err != nil {
-// 	s.log.Errorf("JWTtoken not create : %v", err)
-// 	w.WriteHeader(http.StatusMethodNotAllowed)
-// 	w.Write([]byte(err.Error()))
-// 	return
-// }
-// JWTresp, err := json.Marshal(JWTtoken)
-// if err != nil {
-// 	w.WriteHeader(http.StatusMethodNotAllowed)
-// 	w.Write([]byte(err.Error()))
-// 	s.log.Errorf("JWTtoken not marshal josn : %v", err)
-// 	return
-// }
-// w.Write(JWTresp)
-// }
