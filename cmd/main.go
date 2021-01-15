@@ -30,5 +30,4 @@ TODO
 Questions
 как найти user in /delete если нет id,
 всегда ли мы создаем claims со всеми полями
-
 */

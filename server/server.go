@@ -63,22 +63,20 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) configureRoute() {
-	s.router.HandleFunc("/hello", s.hendlerHello())
 	s.router.HandleFunc("/api/login", s.handlerLoginUser)
 
 	userRouter := s.router.PathPrefix("/user").Subrouter()
 	userRouter.HandleFunc("/create", s.handlerCreateUser)
-	userRouter.HandleFunc("/delete", s.handlerDeleteUser).Queries("user_id", "{id:[0-9]+}")
+	userRouter.HandleFunc("/delete", s.handlerDeleteUser).Queries("user_id", "{user_id:[0-9]+}")
 
-	msgRouter := s.router.PathPrefix("/message").Subrouter()
-	msgRouter.HandleFunc("/send", s.handlerSendMsg)
-	msgRouter.HandleFunc("/getall", s.hendlerGetAllMsg)
-	msgRouter.HandleFunc("/delete", s.hendlerDeleteMsg).Queries("msg_id", "{id:[0-9]+}")
+	msgRouter := s.router.PathPrefix("/msg").Subrouter()
+	msgRouter.HandleFunc("/send", s.hSendMsgInChat)
+	msgRouter.HandleFunc("/getall", s.hGetAllMsgFromChat).Queries("chat_id", "{chat_id:[0-9]+}")
+	msgRouter.HandleFunc("/del", s.hDeleteMsg).Queries("msg_id", "{msg_id:[0-9]+}")
 
 	chatRouter := s.router.PathPrefix("/chat").Subrouter()
-	chatRouter.HandleFunc("/send", s.handlerSendMessage)
-	// chatRouter.HandleFunc("/get", s.handlerGetListChats).Queries("chat_id", "{id:[0-9]+}")
-	// chatRouter.HandleFunc("/check", s.handlerCheckChat)
+	chatRouter.HandleFunc("/create", s.hCreateChat)
+	chatRouter.HandleFunc("/getall", s.hGetAllChats)
 
 	userRouter.Use(s.authMiddleware)
 	msgRouter.Use(s.authMiddleware)

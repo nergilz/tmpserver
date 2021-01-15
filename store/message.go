@@ -14,15 +14,17 @@ type MsgStore struct {
 
 // MsgModel message model
 type MsgModel struct {
-	ID      int64  `json:"id"`
-	ToID    int64  `json:"to_id"`   // кому
-	FromID  int64  `json:"from_id"` // от кого
-	Content string `json:"content"`
+	ID         int64  `json:"id"`
+	ToChatID   int64  `json:"to_chat_id"`   // кому
+	FromUserID int64  `json:"from_user_id"` // от кого
+	Content    string `json:"content"`
 }
 
-// SendMsgRequestModel send msg from user to user
-type SendMsgRequestModel struct {
-	Login   string `json:"login"`
+// MsgRequestModel send msg from user to chat
+type MsgRequestModel struct {
+	ID      int64
+	ChatID  int64  `json:"chat_id"`
+	UserID  int64  `json:"user_id"`
 	Content string `json:"content"`
 }
 
@@ -35,10 +37,10 @@ func InitMsgStore(db *database.DB, log *logger.Logger) *MsgStore {
 }
 
 // CreateMsg create message in database
-func (ms *MsgStore) CreateMsg(msg *MsgModel) error {
+func (ms *MsgStore) CreateMsg(msg *MsgRequestModel) error {
 	var id int64
-	q := `INSERT INTO messages (to_id, from_id, content) VALUES ($1,$2,$3) RETURNING id`
-	err := ms.db.Conn().QueryRow(q, msg.ToID, msg.FromID, msg.Content).Scan(&id)
+	q := `INSERT INTO messages (chat_id, user_id, content) VALUES ($1,$2,$3) RETURNING id`
+	err := ms.db.Conn().QueryRow(q, msg.ChatID, msg.UserID, msg.Content).Scan(&id)
 	if err != nil {
 		return err
 	}
@@ -48,6 +50,11 @@ func (ms *MsgStore) CreateMsg(msg *MsgModel) error {
 
 // DeleteMsg delete message in database
 func (ms *MsgStore) DeleteMsg(msgID int64) error {
+	// qcheck := `SELECT id FROM messages WHERE id=$1 VALUES($1)`
+	// if err := ms.db.Conn().QueryRow(qcheck, msgID).Scan(); err != nil {
+	// 	return err
+	// }
+
 	q := `DELETE FROM messages WHERE id = $1`
 	if err := ms.db.Conn().QueryRow(q, msgID).Err(); err != nil {
 		return err
@@ -56,12 +63,12 @@ func (ms *MsgStore) DeleteMsg(msgID int64) error {
 }
 
 // FindMsgByID return msg by id
-func (ms *MsgStore) FindMsgByID(msgID int64) (*MsgModel, error) {
-	msg := &MsgModel{}
-	q := `SELECT id, to_id, from_id, content FROM messages WHERE id=$1 VALUES ($1)`
+func (ms *MsgStore) FindMsgByID(msgID int64) (*MsgRequestModel, error) {
+	msg := &MsgRequestModel{}
+	q := `SELECT id, chat_id, user_id, content FROM messages WHERE id=$1 VALUES($1)`
 	if err := ms.db.Conn().QueryRow(q, msgID).Scan(
-		&msg.ToID,
-		&msg.FromID,
+		&msg.ChatID,
+		&msg.UserID,
 		&msg.Content,
 	); err != nil {
 		return nil, err
@@ -69,18 +76,55 @@ func (ms *MsgStore) FindMsgByID(msgID int64) (*MsgModel, error) {
 	return msg, nil
 }
 
+// FindAllMsgFromChat ...
+func (ms *MsgStore) FindAllMsgFromChat(chatID, userID int64) ([]*MsgRequestModel, error) {
+	messages := []*MsgRequestModel{}
+	q := `SELECT * FROM messages where chat_id=$1 AND user_id=$2`
+	rows, err := ms.db.Conn().Query(q, chatID, userID)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		item := new(MsgRequestModel)
+		if err := rows.Scan(&item.ID, &item.ChatID, &item.UserID, &item.Content); err != nil {
+			return nil, err
+		}
+		messages = append(messages, item)
+	}
+	rows.Close()
+
+	return messages, nil
+}
+
+// Validate ..
+func (msg *MsgRequestModel) Validate() error {
+	if msg.Content == "" {
+		return errors.New("text cannot be empty")
+	}
+	return nil
+}
+
+// SendValidate ..
+func (msg *MsgRequestModel) SendValidate() error {
+	if msg.Content == "" {
+		return errors.New("content cannot be empty")
+	}
+	return nil
+}
+
+//-----------------------------------------------------------------------------------------------------
+
 // FindAllIncomingMsg все принятые пользователем
 func (ms *MsgStore) FindAllIncomingMsg(userID int64) ([]*MsgModel, error) {
 	messages := []*MsgModel{}
 	q := `SELECT * FROM messages where to_id=$1`
 	rows, err := ms.db.Conn().Query(q, userID)
 	if err != nil {
-
 		return nil, err
 	}
 	for rows.Next() {
 		item := new(MsgModel)
-		if err := rows.Scan(&item.ID, &item.ToID, &item.FromID, &item.Content); err != nil {
+		if err := rows.Scan(&item.ID, &item.ToChatID, &item.FromUserID, &item.Content); err != nil {
 			return nil, err
 		}
 		messages = append(messages, item)
@@ -100,7 +144,7 @@ func (ms *MsgStore) FindAllOutgoingMsg(userID int64) ([]*MsgModel, error) {
 	}
 	for rows.Next() {
 		item := new(MsgModel)
-		if err := rows.Scan(&item.ID, &item.ToID, &item.FromID, &item.Content); err != nil {
+		if err := rows.Scan(&item.ID, &item.ToChatID, &item.FromUserID, &item.Content); err != nil {
 			return nil, err
 		}
 		messages = append(messages, item)
@@ -108,43 +152,4 @@ func (ms *MsgStore) FindAllOutgoingMsg(userID int64) ([]*MsgModel, error) {
 	rows.Close()
 
 	return messages, nil
-}
-
-// FindAllMsg incoming & outgoing user messages (где user отправитель и получатель)
-func (ms *MsgStore) FindAllMsg(userID int64) ([]*MsgModel, error) {
-	messages := []*MsgModel{}
-	q := `SELECT * FROM messages where to_id=$1 OR from_id=$2`
-	rows, err := ms.db.Conn().Query(q, userID, userID)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		item := new(MsgModel)
-		if err := rows.Scan(&item.ID, &item.ToID, &item.FromID, &item.Content); err != nil {
-			return nil, err
-		}
-		messages = append(messages, item)
-	}
-	rows.Close()
-
-	return messages, nil
-}
-
-// Validate ..
-func (msg *MsgModel) Validate() error {
-	if msg.Content == "" {
-		return errors.New("text cannot be empty")
-	}
-	return nil
-}
-
-// SendValidate ..
-func (msg *SendMsgRequestModel) SendValidate() error {
-	if msg.Login == "" {
-		return errors.New("login cannot be empty")
-	}
-	if msg.Content == "" {
-		return errors.New("content cannot be empty")
-	}
-	return nil
 }

@@ -48,6 +48,7 @@ func (db *DB) Init(passwordSuperUser string) error {
 	// create table users
 	qUsers := `CREATE TABLE IF NOT EXISTS users (
 		id BIGSERIAL NOT NULL PRIMARY KEY,
+		name VARCHAR(100),
 		login VARCHAR NOT NULL UNIQUE,
 		password VARCHAR NOT NULL,
 		role VARCHAR NOT NULL
@@ -63,9 +64,9 @@ func (db *DB) Init(passwordSuperUser string) error {
 	qChats := `CREATE TABLE IF NOT EXISTS chats (
 		id BIGSERIAL NOT NULL PRIMARY KEY,
 		name VARCHAR NOT NULL,
-		user_ids INTEGER[],
-		private BOOL,
-		public BOOL
+		creator_id BIGINT NOT NULL,
+		users_ids BIGINT[] NOT NULL,
+		individual BOOL
 	)`
 	_, err = db.cdb.Exec(qChats)
 	if err != nil {
@@ -74,11 +75,24 @@ func (db *DB) Init(passwordSuperUser string) error {
 	}
 	db.log.Service("init table chats")
 
+	// create table participants
+	qParticipants := `CREATE TABLE IF NOT EXISTS participants (
+		id BIGSERIAL NOT NULL PRIMARY KEY,
+		chat_id BIGINT NOT NULL UNIQUE REFERENCES chats (id),
+		users_ids BIGINT[] NOT NULL
+	)`
+	_, err = db.cdb.Exec(qParticipants)
+	if err != nil {
+		db.log.Errorf("not create table 'participants': %v", err)
+		return err
+	}
+	db.log.Service("init table participants")
+
 	// create table messages
 	qMessages := `CREATE TABLE IF NOT EXISTS messages (
 		id BIGSERIAL NOT NULL PRIMARY KEY,
-		to_id BIGINT REFERENCES users (id),
-		from_id INTEGER REFERENCES users (id),
+		chat_id BIGINT NOT NULL REFERENCES chats (id),
+		user_id BIGINT NOT NULL REFERENCES users (id),
 		content TEXT NOT NULL
 	)`
 	_, err = db.cdb.Exec(qMessages)

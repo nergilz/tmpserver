@@ -1,6 +1,8 @@
 package store
 
 import (
+	"fmt"
+
 	"github.com/0LuigiCode0/Library/logger"
 	"github.com/lib/pq"
 	"github.com/nergilz/tmpserver/database"
@@ -11,22 +13,21 @@ type ChatStore struct {
 	db *database.DB
 }
 
+// // RequestChat ...
+// type RequestChat struct {
+// 	Name   string `json:"name"`
+// }
+
 // ChatModel chat model
 type ChatModel struct {
-	ID      int64   `json:"chat_id"`
-	Name    string  `json:"chat_name"`
-	UserIDs []int64 `json:"users_ids"`
-	Private bool    `json:"private"` // for tow
-	// Public  bool    `json:"public"`  // for many people
+	ID         int64   `json:"chat_id"`
+	Name       string  `json:"chat_name"`
+	CreatorID  int64   `json:"creator_id"`
+	UsersIDs   []int64 `json:"users_ids"`
+	Individual bool    `json:"individual"`
 }
 
-// SendChatRequestModel send msg in chat request
-type SendChatRequestModel struct {
-	ID      int64  `json:"chat_id"`
-	Content string `json:"content"`
-}
-
-// InitChartStore ..
+// InitChartStore ...
 func InitChartStore(db *database.DB, log *logger.Logger) *ChatStore {
 	cs := new(ChatStore)
 	cs.db = db
@@ -35,37 +36,23 @@ func InitChartStore(db *database.DB, log *logger.Logger) *ChatStore {
 }
 
 // CreateChat ...
-func (cs *ChatStore) CreateChat(cm *ChatModel) error { // сделать проверку SQL запросом
-	var id int64
-	q := `INSERT INTO chats (user_id, private) VALUES($1, $2) RETURNING id`
+func (cs *ChatStore) CreateChat(chat *ChatModel) error {
+	var cid int64
+	qc := `INSERT INTO chats (name, creator_id, users_ids, individual) VALUES($1, $2, $3, $4) RETURNING id`
 	if err := cs.db.Conn().QueryRow(
-		q,
-		pq.Array(cm.UserIDs),
-		cm.Private).Scan(&id); err != nil {
+		qc,
+		chat.Name,
+		chat.CreatorID,
+		pq.Array(chat.UsersIDs),
+		chat.Individual).Scan(&cid); err != nil {
 		return err
 	}
-	cm.ID = id
-	return nil
-}
+	chat.ID = cid
 
-// CheckChat ..
-func (cs *ChatStore) CheckChat() (bool, error) {
-	var id int64
-	q := `SELECT id FROM chats ORDER BY id DESC LIMIT 1 WHERE id=$1 VALUES($1)`
-	if err := cs.db.Conn().QueryRow(q).Scan(
-		&id,
-	); err != nil {
-		return false, err
+	qp := `INSERT INTO participants (chat_id, users_ids) VALUES($1, $2)`
+	if err := cs.db.Conn().QueryRow(qp, cid, pq.Array(chat.UsersIDs)).Err(); err != nil {
+		return err
 	}
-	if id != 0 {
-		return false, nil
-	}
-	return true, nil
-}
-
-// UpdateChat ..
-func (cs *ChatStore) UpdateChat(cm *ChatModel) error {
-	// q := ``
 	return nil
 }
 
@@ -78,8 +65,64 @@ func (cs *ChatStore) DeleteChat(chatID int64) error {
 	return nil
 }
 
-// DeleteUserInChat ...
-func (cs *ChatStore) DeleteUserInChat(userID int64) error {
+// FindChatByID ...
+func (cs *ChatStore) FindChatByID(chatID int64) (*ChatModel, error) {
+	chat := &ChatModel{}
+	q := `SELECT id, name, creator_id, users_ids, individual WHERE id=$1 VALUES($1)`
+	if err := cs.db.Conn().QueryRow(q, chatID).Scan(
+		&chat.ID,
+		&chat.Name,
+		&chat.CreatorID,
+		&chat.UsersIDs,
+		&chat.Individual,
+	); err != nil {
+		return nil, err
+	}
+	return chat, nil
+}
 
-	return nil
+// UpdateChat ..
+func (cs *ChatStore) UpdateChat(chat *ChatModel) (*ChatModel, error) {
+	newChat := new(ChatModel)
+	q := `UPDATE chats SET name=$1, users_ids=$2, individual=$3	
+			WHERE id=$4	
+			RETURNING id, name, creator_id, users_ids, private`
+	if err := cs.db.Conn().QueryRow(
+		q,
+		chat.Name,
+		chat.UsersIDs,
+		chat.Individual,
+		chat.ID).Err(); err != nil {
+		return nil, err
+	}
+	return newChat, nil
+}
+
+// GetAllChats through messages table
+func (cs *ChatStore) GetAllChats(userID int64) ([]*ChatModel, error) {
+	chats := []*ChatModel{}
+	q := `SELECT * FROM chats WHERE $1 <@ users_ids`
+	exist := make([]int64, 0)
+	exist = append(exist, userID)
+	rows, err := cs.db.Conn().Query(q, pq.Array(exist))
+	if err != nil {
+		fmt.Println("[error query] :", err)
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		item := new(ChatModel)
+		err := rows.Scan(
+			&item.ID,
+			&item.Name,
+			&item.CreatorID,
+			pq.Array(&item.UsersIDs),
+			&item.Individual)
+		if err != nil {
+			fmt.Println("[error scan] :", err)
+			return nil, err
+		}
+		chats = append(chats, item)
+	}
+	return chats, nil
 }
