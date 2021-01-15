@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -12,13 +11,6 @@ import (
 	"github.com/nergilz/tmpserver/store"
 	"github.com/nergilz/tmpserver/utils"
 )
-
-func (s *Server) hendlerHello() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "server is run on index, check JWT")
-		s.log.Info("hendler Hello is run, check JWT	")
-	}
-}
 
 // handlerCreateUser only for super_user
 func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
