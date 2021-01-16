@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -10,7 +11,8 @@ import (
 	"github.com/nergilz/tmpserver/store"
 )
 
-func (s *Server) hSendMsgInChat(w http.ResponseWriter, r *http.Request) {
+// SendMsgToChat отправляет в известный чат из списка юзера
+func (s *Server) SendMsgToChat(w http.ResponseWriter, r *http.Request) {
 	uCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
@@ -31,18 +33,53 @@ func (s *Server) hSendMsgInChat(w http.ResponseWriter, r *http.Request) {
 		s.log.Warningf("cannot body unmarshal json %v", err)
 		return
 	}
-	msgRequest.UserID = uCtx.ID
 
-	if err := s.ms.CreateMsg(&msgRequest); err != nil {
+	vars := mux.Vars(r)
+	chatIDfromURL, ok := vars["chat_id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		s.log.Warning("cannot get chat_id parameter from url")
+		return
+	}
+	chatID, _ := strconv.ParseInt(chatIDfromURL, 10, 64)
+
+	msgRequest.UserID = uCtx.ID
+	msgRequest.ChatID = chatID
+
+	if err := s.msgST.CreateMsg(&msgRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		s.log.Warningf("cannot create msg, %v", err)
 		return
 	}
+
+	fmt.Println(chatID)
+	getChat, err := s.chatST.FindChatByID(chatID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		s.log.Warningf("cannot find chat: %v", err)
+		return
+	}
+
+	getChat.UsersIDs = append(getChat.UsersIDs, msgRequest.UserID)
+	chatForUpdate := &store.ChatModel{
+		Name:       getChat.Name,
+		CreatorID:  getChat.CreatorID,
+		UsersIDs:   getChat.UsersIDs,
+		Individual: getChat.Individual,
+	}
+	_, err = s.chatST.UpdateChat(chatForUpdate)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		s.log.Warningf("cannot find chat: %v", err)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 	s.log.Infof("send msg in chat: %v", msgRequest.ChatID)
 }
 
-func (s *Server) hDeleteMsg(w http.ResponseWriter, r *http.Request) {
+// DeleteMsg удаление сообщения
+func (s *Server) DeleteMsg(w http.ResponseWriter, r *http.Request) {
 	uCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
@@ -62,31 +99,18 @@ func (s *Server) hDeleteMsg(w http.ResponseWriter, r *http.Request) {
 		s.log.Warningf("parameter not int: %v", err)
 		return
 	}
-	// var msg *store.MsgRequestModel
-	// msg, err = s.ms.FindMsgByID(msgID)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte("cannot find msg by id"))
-	// 	s.log.Warningf("cannot find msg by id: %v", err)
-	// 	return
-	// }
-	// if msg.ID == msgID {
-	if err = s.ms.DeleteMsg(msgID); err != nil {
+
+	if err = s.msgST.DeleteMsg(msgID); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		s.log.Errorf("cannot delete message : %v", err)
 		return
 	}
-	// } else {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	s.log.Errorf("not message id: %v", err)
-	// 	return
-	// }
-
 	w.WriteHeader(http.StatusOK)
 	s.log.Infof("Delete Message: %v, id: %v", uCtx.Login, msgID)
 }
 
-func (s *Server) hGetAllMsgFromChat(w http.ResponseWriter, r *http.Request) {
+// GetAllMsgFromChat получить все сообщения из чата
+func (s *Server) GetAllMsgFromChat(w http.ResponseWriter, r *http.Request) {
 	uCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
@@ -107,7 +131,7 @@ func (s *Server) hGetAllMsgFromChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allMsg, err := s.ms.FindAllMsgFromChat(chatID, uCtx.ID)
+	allMsg, err := s.msgST.FindAllMsgFromChat(chatID, uCtx.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("cannot find all msg from chat"))

@@ -21,7 +21,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawToken := r.Header.Get("auth")
 		// if rawToken != "" {
-		tokenMetadata, err := utils.VerifyJWTtoken(rawToken, s.us.GetSecret())
+		tokenMetadata, err := utils.VerifyJWTtoken(rawToken, s.userST.GetSecret())
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte(http.StatusText(http.StatusForbidden)))
@@ -35,7 +35,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			s.log.Warningf("ckeck token, not valid : %v", err)
 			return
 		}
-		u, err := s.us.FindByID(userFromToken.ID)
+		u, err := s.userST.FindByID(userFromToken.ID)
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte(http.StatusText(http.StatusForbidden)))

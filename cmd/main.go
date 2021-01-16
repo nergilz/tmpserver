@@ -18,16 +18,7 @@ func main() {
 }
 
 /*
-Scenario
-1.sending mail withing the service
-2.sending and reciving mail from SMTP server
-
 TODO
-создание user по инвайтной ссылке
-дописать валидацию
-разобраться с AuthGuard()
-
-Questions
-как найти user in /delete если нет id,
-всегда ли мы создаем claims со всеми полями
+отправить сообщение в чат, update чата при этом
+добавить фунционал в updateChat
 */

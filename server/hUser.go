@@ -12,8 +12,8 @@ import (
 	"github.com/nergilz/tmpserver/utils"
 )
 
-// handlerCreateUser only for super_user
-func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
+// CreateUser only for super_user
+func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	userFromCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -59,7 +59,7 @@ func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	userFromBody.Password = hashPassword
 
-	err = s.us.Create(&userFromBody)
+	err = s.userST.Create(&userFromBody)
 	if err != nil {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte(err.Error()))
@@ -71,8 +71,8 @@ func (s *Server) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-// handlerDeleteUser only for super_user
-func (s *Server) handlerDeleteUser(w http.ResponseWriter, r *http.Request) {
+// DeleteUser only for super_user
+func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	u, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
@@ -101,7 +101,7 @@ func (s *Server) handlerDeleteUser(w http.ResponseWriter, r *http.Request) {
 		s.log.Warning("cannot delete user, yuo not super_user")
 		return
 	}
-	if err = s.us.Delete(ID); err != nil {
+	if err = s.userST.Delete(ID); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
 		s.log.Errorf("cannot delete User : %v", err)
@@ -112,8 +112,8 @@ func (s *Server) handlerDeleteUser(w http.ResponseWriter, r *http.Request) {
 	s.log.Infof("Delete User: %v, id: %v", u.Login, userID)
 }
 
-// handlerLoginUser login all users & create token
-func (s *Server) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
+// LoginUser login all users & create token
+func (s *Server) LoginUser(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -140,7 +140,7 @@ func (s *Server) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userFromDB, err := s.us.FindByLogin(userFromBody.Login)
+	userFromDB, err := s.userST.FindByLogin(userFromBody.Login)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(err.Error()))
@@ -161,7 +161,7 @@ func (s *Server) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//	create token:
-	JWTtoken, err := utils.CreateJWTtoken(userFromDB, s.us.GetSecret())
+	JWTtoken, err := utils.CreateJWTtoken(userFromDB, s.userST.GetSecret())
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))

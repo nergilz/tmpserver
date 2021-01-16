@@ -50,11 +50,6 @@ func (ms *MsgStore) CreateMsg(msg *MsgRequestModel) error {
 
 // DeleteMsg delete message in database
 func (ms *MsgStore) DeleteMsg(msgID int64) error {
-	// qcheck := `SELECT id FROM messages WHERE id=$1 VALUES($1)`
-	// if err := ms.db.Conn().QueryRow(qcheck, msgID).Scan(); err != nil {
-	// 	return err
-	// }
-
 	q := `DELETE FROM messages WHERE id = $1`
 	if err := ms.db.Conn().QueryRow(q, msgID).Err(); err != nil {
 		return err

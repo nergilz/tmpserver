@@ -9,7 +9,8 @@ import (
 	"github.com/nergilz/tmpserver/store"
 )
 
-func (s *Server) hCreateChat(w http.ResponseWriter, r *http.Request) {
+// CreateChat ...
+func (s *Server) CreateChat(w http.ResponseWriter, r *http.Request) {
 	uCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
@@ -38,7 +39,7 @@ func (s *Server) hCreateChat(w http.ResponseWriter, r *http.Request) {
 	reqChat.UsersIDs = make([]int64, 0)
 	reqChat.UsersIDs = append(reqChat.UsersIDs, uCtx.ID)
 
-	err = s.cs.CreateChat(&reqChat)
+	err = s.chatST.CreateChat(&reqChat)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
@@ -50,7 +51,8 @@ func (s *Server) hCreateChat(w http.ResponseWriter, r *http.Request) {
 	s.log.Info("create chat: %v", reqChat.Name)
 }
 
-func (s *Server) hGetAllChats(w http.ResponseWriter, r *http.Request) {
+// GetAllChats ...
+func (s *Server) GetAllChats(w http.ResponseWriter, r *http.Request) {
 	uCtx, err := GetUserFromContext(r, СtxKeyUser)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
@@ -58,7 +60,7 @@ func (s *Server) hGetAllChats(w http.ResponseWriter, r *http.Request) {
 		s.log.Warningf("not get user from context: %v", err)
 		return
 	}
-	chats, err := s.cs.GetAllChats(uCtx.ID)
+	chats, err := s.chatST.GetAllChats(uCtx.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))

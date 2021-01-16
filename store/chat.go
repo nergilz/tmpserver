@@ -98,6 +98,8 @@ func (cs *ChatStore) UpdateChat(chat *ChatModel) (*ChatModel, error) {
 	return newChat, nil
 }
 
+// func (cs *ChatStore) UpdateUsersIDs(userID int64) {}
+
 // GetAllChats through messages table
 func (cs *ChatStore) GetAllChats(userID int64) ([]*ChatModel, error) {
 	chats := []*ChatModel{}

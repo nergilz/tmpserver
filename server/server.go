@@ -20,9 +20,9 @@ type Server struct {
 	log      *logger.Logger
 	router   *mux.Router
 	db       *database.DB
-	us       *store.UserStore
-	ms       *store.MsgStore
-	cs       *store.ChatStore
+	userST   *store.UserStore
+	msgST    *store.MsgStore
+	chatST   *store.ChatStore
 }
 
 // New server
@@ -55,28 +55,28 @@ func (s *Server) Start() error {
 		return err
 	}
 	s.db = db
-	s.us = store.InitUserStore(db, s.log)
-	s.ms = store.InitMsgStore(db, s.log)
-	s.cs = store.InitChartStore(db, s.log)
+	s.userST = store.InitUserStore(db, s.log)
+	s.msgST = store.InitMsgStore(db, s.log)
+	s.chatST = store.InitChartStore(db, s.log)
 
 	return http.ListenAndServe(s.BindAddr, s.router)
 }
 
 func (s *Server) configureRoute() {
-	s.router.HandleFunc("/api/login", s.handlerLoginUser)
+	s.router.HandleFunc("/api/login", s.LoginUser)
 
 	userRouter := s.router.PathPrefix("/user").Subrouter()
-	userRouter.HandleFunc("/create", s.handlerCreateUser)
-	userRouter.HandleFunc("/delete", s.handlerDeleteUser).Queries("user_id", "{user_id:[0-9]+}")
-
-	msgRouter := s.router.PathPrefix("/msg").Subrouter()
-	msgRouter.HandleFunc("/send", s.hSendMsgInChat)
-	msgRouter.HandleFunc("/getall", s.hGetAllMsgFromChat).Queries("chat_id", "{chat_id:[0-9]+}")
-	msgRouter.HandleFunc("/del", s.hDeleteMsg).Queries("msg_id", "{msg_id:[0-9]+}")
+	userRouter.HandleFunc("/create", s.CreateUser)
+	userRouter.HandleFunc("/delete", s.DeleteUser).Queries("user_id", "{user_id:[0-9]+}")
 
 	chatRouter := s.router.PathPrefix("/chat").Subrouter()
-	chatRouter.HandleFunc("/create", s.hCreateChat)
-	chatRouter.HandleFunc("/getall", s.hGetAllChats)
+	chatRouter.HandleFunc("/create", s.CreateChat)
+	chatRouter.HandleFunc("/getall", s.GetAllChats)
+
+	msgRouter := s.router.PathPrefix("/message").Subrouter()
+	msgRouter.HandleFunc("/send", s.SendMsgToChat).Queries("chat_id", "{chat_id:[0-9]+}")
+	msgRouter.HandleFunc("/getall", s.GetAllMsgFromChat).Queries("chat_id", "{chat_id:[0-9]+}")
+	msgRouter.HandleFunc("/delete", s.DeleteMsg).Queries("msg_id", "{msg_id:[0-9]+}")
 
 	userRouter.Use(s.authMiddleware)
 	msgRouter.Use(s.authMiddleware)
